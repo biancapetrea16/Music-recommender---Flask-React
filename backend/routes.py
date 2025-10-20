@@ -63,7 +63,7 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({'message': 'Înregistrare reușită!'}), 201
+    return jsonify({'message': 'inregistrare reusita!'}), 201
 
 
 # 3. Rută API: Login (POST /login)
@@ -86,7 +86,7 @@ def login():
         
         # 3. Returnează token-ul către Frontend
         return jsonify({
-            'message': 'Autentificare reușită!',
+            'message': 'autentificare reusita!',
             'token': token
         }), 200
     
@@ -101,5 +101,5 @@ def profile(current_user):
     return jsonify({
         'user_id': current_user.id,
         'username': current_user.username,
-        'message': 'Bine ai venit în zona ta de profil protejată!'
+        'message': 'Bine ai venit in zona ta de profil protejata!'
     })

@@ -1,7 +1,8 @@
-from flask_sqlalchemy import SQLAlchemy
+#from flask_sqlalchemy import SQLAlchemy
 # 'db' va fi inițializat în app.py
+from backend import db
 
-db = SQLAlchemy()
+#db = SQLAlchemy()
 
 # Tabelul pentru Utilizatori
 class User(db.Model):
