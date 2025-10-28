@@ -3,7 +3,7 @@
 from flask import Blueprint, request, jsonify
 # 1. Importăm db și bcrypt din noul __init__.py (nu din backend.app)
 from backend import db, bcrypt 
-from backend.models import User 
+from backend.models import User, Song, Favorite
 import jwt 
 import datetime
 from functools import wraps
@@ -103,3 +103,78 @@ def profile(current_user):
         'username': current_user.username,
         'message': 'Bine ai venit in zona ta de profil protejata!'
     })
+
+
+@main_bp.route('/songs', methods=['GET'])
+@token_required
+def get_all_songs(current_user):
+    # Preluăm toate piesele din baza de date
+    songs = Song.query.all()
+    
+    # Preluăm ID-urile pieselor favorite ale utilizatorului curent
+    favorite_song_ids = [fav.song_id for fav in current_user.favorites]
+
+    songs_list = []
+    for song in songs:
+        songs_list.append({
+            'id': song.id,
+            'title': song.title,
+            'artist': song.artist,
+            'genre': song.genre,
+            # Indicăm dacă piesa e deja în lista de favorite
+            'is_favorite': song.id in favorite_song_ids 
+        })
+        
+    return jsonify(songs_list), 200
+
+
+# 6. Rută API: Adaugă/Șterge Favorite (POST /favorites)
+@main_bp.route('/favorites', methods=['POST'])
+@token_required
+def toggle_favorite(current_user):
+    data = request.get_json()
+    song_id = data.get('song_id')
+
+    if not song_id:
+        return jsonify({'message': 'ID-ul piesei (song_id) este obligatoriu'}), 400
+
+    song = Song.query.get(song_id)
+    if not song:
+        return jsonify({'message': 'Piesa nu a fost găsită'}), 404
+
+    # Verifică dacă piesa este deja în favorite
+    favorite_entry = Favorite.query.filter_by(user_id=current_user.id, song_id=song_id).first()
+
+    if favorite_entry:
+        # Dacă există, ștergem (UNLIKE)
+        db.session.delete(favorite_entry)
+        db.session.commit()
+        return jsonify({'message': 'Piesa a fost eliminată din favorite', 'action': 'deleted'}), 200
+    else:
+        # Dacă nu există, adăugăm (LIKE)
+        new_favorite = Favorite(user_id=current_user.id, song_id=song_id)
+        db.session.add(new_favorite)
+        db.session.commit()
+        return jsonify({'message': 'Piesa a fost adăugată la favorite', 'action': 'added'}), 201
+
+
+# 7. Rută API: Afișează Favorite (GET /favorites)
+@main_bp.route('/favorites', methods=['GET'])
+@token_required
+def get_favorites(current_user):
+    # Preluăm toate înregistrările Favorite pentru user-ul curent
+    favorites = Favorite.query.filter_by(user_id=current_user.id).all()
+    
+    # Construim lista cu detaliile complete ale pieselor favorite
+    favorite_songs_list = []
+    for fav in favorites:
+        song = Song.query.get(fav.song_id)
+        if song:
+            favorite_songs_list.append({
+                'id': song.id,
+                'title': song.title,
+                'artist': song.artist,
+                'genre': song.genre
+            })
+
+    return jsonify(favorite_songs_list), 200
