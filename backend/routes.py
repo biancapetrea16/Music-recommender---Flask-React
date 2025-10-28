@@ -7,6 +7,7 @@ from backend.models import User, Song, Favorite
 import jwt 
 import datetime
 from functools import wraps
+from backend.recommender import get_recommendations_for_user 
 
 # 1. Creează un Blueprint numit 'main_bp'
 main_bp = Blueprint('main_bp', __name__)
@@ -178,3 +179,13 @@ def get_favorites(current_user):
             })
 
     return jsonify(favorite_songs_list), 200
+
+# 8. Rută API: Obține Recomandările (GET /recommendations)
+@main_bp.route('/recommendations', methods=['GET'])
+@token_required
+def get_recommendations(current_user):
+    # Logica de recomandare este izolată în recommender.py
+    recommendations = get_recommendations_for_user(current_user.id, num_recommendations=5)
+    
+    # Returnează lista de piese recomandate (care sunt deja în format JSON-ready)
+    return jsonify(recommendations), 200
